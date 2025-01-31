@@ -1,0 +1,56 @@
+# Clojure
+.cpcache/
+.lein-*
+.nrepl-port
+.prepl-port
+.rebel_readline_history
+target/
+classes/
+checkouts/
+pom.xml
+pom.xml.asc
+*.jar
+*.class
+
+# IDE specific files
+.idea/
+*.iml
+.calva/
+.clj-kondo/
+.lsp/
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS specific files
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Dependency directories
+/lib/
+/libs/
+/build/
+
+# Log files
+*.log
+
+# Local configuration
+profiles.clj
+.env
+
+# Documentation build
+/doc/
+/docs/_build/
+
+# Test coverage
+/coverage/
+
+# Package files
+*.zip
+*.tar.gz
+
+# Local development
+dev-config.edn 

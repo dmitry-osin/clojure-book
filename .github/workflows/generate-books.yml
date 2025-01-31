@@ -1,0 +1,109 @@
+name: Generate PDF and FB2 from Markdown
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  convert_to_books:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install mdpdf
+        run: npm install -g mdpdf
+
+      - name: Install Pandoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc
+      
+      - name: Combine Markdown files
+        run: |
+          # Create output directory
+          mkdir -p pdfs
+          mkdir -p ebooks
+          # Create a temporary file for combined content
+          echo "# Clojure для Java-разработчиков" > combined.md
+          echo "" >> combined.md
+          # Add table of contents
+          cat toc.md >> combined.md
+          echo "" >> combined.md
+          # Add all chapters in numerical order
+          for i in {1..14}; do
+            if [ -f "chapter/chapter-$i.md" ]; then
+              echo "" >> combined.md
+              echo "---" >> combined.md
+              echo "" >> combined.md
+              cat "chapter/chapter-$i.md" >> combined.md
+            fi
+          done
+          # Add appendices
+          for letter in {A..C}; do
+            if [ -f "appendix/appendix-$letter.md" ]; then
+              echo "" >> combined.md
+              echo "---" >> combined.md
+              echo "" >> combined.md
+              cat "appendix/appendix-$letter.md" >> combined.md
+            fi
+          done
+
+      - name: Convert to PDF
+        run: |
+          # Generate PDF
+          mdpdf combined.md
+          # Move PDF to pdfs directory
+          mv combined.pdf pdfs/clojure-for-java-developers.pdf
+          # Check if PDF was created
+          ls -la pdfs/
+          if [ ! -f pdfs/clojure-for-java-developers.pdf ]; then
+            echo "Error: PDF file was not created!"
+            exit 1
+          fi
+
+      - name: Convert to FB2
+        run: |
+          # Generate FB2
+          pandoc combined.md \
+            --from markdown \
+            --to fb2 \
+            --standalone \
+            --metadata title="Clojure для Java-разработчиков" \
+            --metadata author="Дмитрий Осин" \
+            --metadata date="2024" \
+            --metadata lang="ru" \
+            --output ebooks/clojure-for-java-developers.fb2
+          # Check if FB2 was created
+          ls -la ebooks/
+          if [ ! -f ebooks/clojure-for-java-developers.fb2 ]; then
+            echo "Error: FB2 file was not created!"
+            exit 1
+          fi
+
+      - name: Upload PDF as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clojure-for-java-developers-pdf
+          path: pdfs/clojure-for-java-developers.pdf
+
+      - name: Upload FB2 as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clojure-for-java-developers-fb2
+          path: ebooks/clojure-for-java-developers.fb2
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: pdfs/clojure-for-java-developers.pdf, ebooks/clojure-for-java-developers.fb2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
